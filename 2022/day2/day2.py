@@ -2,7 +2,7 @@ from enum import IntEnum
 import pandas as pd
 
 
-df = pd.read_csv('day2/input.txt', header=None)
+df = pd.read_csv('2022/day2/input.txt', header=None)
 df = df[0].str.split(' ')
 
 # Points matrix, indexed by Player two RPS, columns Player One RPS
@@ -21,3 +21,14 @@ def score(row):
 
 scores = df.apply(score)
 ans_one = scores.sum()
+
+# Part Two
+# Points matrix, indexed by Player two RPS, columns Player One RPS
+rps_table = [
+    [3, 1, 2],
+    [4, 5, 6],
+    [8, 9, 7]
+]
+
+scores = df.apply(score)
+ans_two = scores.sum()
