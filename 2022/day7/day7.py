@@ -8,11 +8,12 @@ with open('2022/day7/input.txt', 'r') as f:
 
 class Tree(object):
     """Generic tree node"""
-    def __init__(self, name='/', size= None, parent=None):
+    def __init__(self, index, name='/', size= None, parent=None):
+        self.index = index
         self.name = name
         self.children = []
         self.size = size
-        self.total_size = None
+        self.contents = {}
         if size is None:
             self.dir = True
         else:
@@ -30,16 +31,6 @@ class Tree(object):
         else:
             raise TypeError
 
-    def calc_dir_size(self):
-        size = 0
-        if self.dir:
-            for n in self.children:
-                if n.dir:
-                    size += calc_dir_size(n)
-                else:
-                    size += n.size
-        self.total_size = size
-        return self.total_size
 
     def __repr__(self):
         if self.size is None:
@@ -49,35 +40,47 @@ class Tree(object):
 
         return f' - {self.name} {info}'
 
+def calc_dir_size(node: Tree):
+    size = 0
+    if len(node.children) == 0:
+        size += node.size
+    else:
+        for n in node.children:
+            size += calc_dir_size(n)
 
-cur_node = Tree('/')
-node_dict = {'/': cur_node}
+    total_size = size
+    return total_size
 
-for i, line in enumerate(lines[:206]):
+cur_node = Tree(0, '/')
+node_dict = {0: cur_node}
+index = 1
+
+for i, line in enumerate(lines):
     if line.startswith('$'):
         if line.startswith('$ cd'):
             cd_arg = line.split(' ')[2]
             if cd_arg == '..':
                 cd_arg = cur_node.parent.name
-            elif cd_arg == '/':
-                pass
-            else:
-                if cd_arg not in node_dict:
-                    node_dict[cd_arg] = Tree(cd_arg, size=None, parent=cur_node)
+                cur_node = cur_node.parent
 
-            cur_node = node_dict[cd_arg]
+            elif cd_arg == '/':
+                cur_node = node_dict[0]
+            else:
+                cur_node = cur_node.contents[cd_arg]
 
     else:
         if line.startswith('dir'):
             cd_arg = line.split(' ')[1]
-            if cd_arg not in node_dict:
-                node_dict[cd_arg] = Tree(cd_arg, size=None, parent=cur_node)
+            node_dict[index] = Tree(index, cd_arg, size=None, parent=cur_node)
+            cur_node.contents[cd_arg] = node_dict[index]
+            index += 1
 
         elif line[0].isdigit():
             size, fname = line.split(' ')
             size = int(size)
-            if fname not in node_dict:
-                node_dict[fname] = Tree(fname, size=size, parent=cur_node)
+            node_dict[index] = Tree(index, fname, size=size, parent=cur_node)
+            cur_node.contents[fname] = node_dict[index]
+            index += 1
 
 for node_name, node in node_dict.items():
     if node.parent is not None:
@@ -86,12 +89,24 @@ for node_name, node in node_dict.items():
 ans_dict = {}
 for node in node_dict.values():
     if node.dir:
-        dir_size = node.calc_dir_size()
+        dir_size = calc_dir_size(node)
         if dir_size <= 100000:
-            ans_dict[node.name] = dir_size
+            ans_dict[node.index] = dir_size
 
 ans = sum(ans_dict.values())
 
+# Answer 2
+total_space = 70000000
+req_space = 30000000
+used_space = calc_dir_size(node_dict[0])
+free_up = req_space - (total_space - used_space)
 
 
+ans2_dict = {}
+for node in node_dict.values():
+    if node.dir:
+        ans2_dict[node.index] = calc_dir_size(node)
 
+ans2_dict_sorted = sorted(ans2_dict.items(), key=lambda item: item[1])
+
+ans2 = min(v for _, v in ans2_dict_sorted if v >= free_up)
